@@ -8,8 +8,8 @@ use amethyst::{
 
 const MOVE_SPEED: f32 = 10.0;
 const ZOOM_SPEED: f32 = 0.2;
-const ZOOM_MIN: f32 = 1.0;
-const ZOOM_MAX: f32 = 5.0;
+const ZOOM_MIN: f32 = 0.1;
+const ZOOM_MAX: f32 = 3.0;
 
 
 #[derive(SystemDesc)]
@@ -44,7 +44,6 @@ impl<'s> System<'s> for MoveCameraSystem {
                         (scale.z + z_scale).max(ZOOM_MIN).min(ZOOM_MAX),
                     );
                     transform.set_scale(scale);
-                    println!("Camera scale: {}", scale);
                 }
             }
         }
