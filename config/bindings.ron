@@ -1,0 +1,8 @@
+(
+    axes: {
+        "camera_horizontal": Emulated(pos: Key(Right), neg: Key(Left)),
+        "camera_vertical": Emulated(pos: Key(Up), neg: Key(Down)),
+        "camera_zoom": MouseWheel(horizontal: false),
+    },
+    actions: {},
+)

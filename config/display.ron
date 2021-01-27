@@ -1,0 +1,4 @@
+(
+    title: "WizCiv!",
+    dimensions: Some((500, 500)),
+)
