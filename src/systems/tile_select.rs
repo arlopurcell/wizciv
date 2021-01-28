@@ -35,13 +35,15 @@ impl Component for Selectable {
 
 #[derive(SystemDesc)]
 pub struct TileSelectSystem {
-    mouse_was_down: bool,
+    left_mouse_was_down: bool,
+    right_mouse_was_down: bool,
 }
 
 impl TileSelectSystem {
     pub fn new() -> Self {
         TileSelectSystem {
-            mouse_was_down: false,
+            left_mouse_was_down: false,
+            right_mouse_was_down: false,
         }
     }
 }
@@ -51,7 +53,7 @@ impl<'s> System<'s> for TileSelectSystem {
         Entities<'s>,
         WriteStorage<'s, Selection>,
         WriteStorage<'s, Selectable>,
-        ReadStorage<'s, HexCoord>,
+        WriteStorage<'s, HexCoord>,
         WriteStorage<'s, Transform>,
         ReadStorage<'s, Camera>,
         Read<'s, InputHandler<StringBindings>>,
@@ -66,7 +68,7 @@ impl<'s> System<'s> for TileSelectSystem {
             entities,
             mut selections,
             mut selectables,
-            hex_coords,
+            mut hex_coords,
             mut transforms,
             cameras,
             input,
@@ -75,10 +77,53 @@ impl<'s> System<'s> for TileSelectSystem {
             sprite_sheet_handle,
         ): Self::SystemData,
     ) {
-        let mouse_is_down = input.mouse_button_is_down(MouseButton::Left);
+        let left_mouse_is_down = input.mouse_button_is_down(MouseButton::Left);
+        let right_mouse_is_down = input.mouse_button_is_down(MouseButton::Right);
 
         let screen_dimensions = Vector2::new(dimensions.width(), dimensions.height());
         let mut selection_transform = None;
+
+        let mouse_hex: Option<HexCoord> = (&cameras, &transforms).join().next().and_then(|(c, t)| input.mouse_position().map(|mp| (c, t, mp))).map(|(camera, transform, (screen_x, screen_y))| camera.screen_to_world_point(Point3::new(screen_x, screen_y, 0.0), screen_dimensions, transform).into());
+
+        if let Some(mouse_hex) = mouse_hex {
+            if self.left_mouse_was_down && !left_mouse_is_down {
+                for (entity, _selection) in (&*entities, &selections).join() {
+                    entities.delete(entity);
+                }
+                for (entity, selectable, hex_coord, transform) in
+                    (&*entities, &mut selectables, &hex_coords, &transforms).join()
+                    {
+                        selectable.selected = *hex_coord == mouse_hex;
+                        if selectable.selected {
+                            selection_transform = Some(transform.clone());
+                        }
+                    }
+            }
+
+            if self.right_mouse_was_down && !right_mouse_is_down {
+                let mut moved = false;
+                let (mouse_x, mouse_y) = mouse_hex.world_coords();
+                //let mouse_vector: Vector2<f32> = mouse_hex.into();
+                for (entity, selectable, mut hex_coord, mut transform) in
+                    (&*entities, &mut selectables, &mut hex_coords, &mut transforms).join()
+                    {
+                        if selectable.selected {
+                            if mouse_hex.is_adjacent(hex_coord) {
+                                transform.set_translation_x(mouse_x).set_translation_y(mouse_y);
+                                *hex_coord = mouse_hex;
+                                moved = true;
+                            }
+                        }
+                    }
+                if moved {
+                    for (entity, _selection) in (&*entities, &selections).join() {
+                        entities.delete(entity);
+                    }
+                }
+            }
+        }
+
+        /*
         for (camera, transform) in (&cameras, &transforms).join() {
             if let Some((screen_x, screen_y)) = input.mouse_position() {
                 let world_point = camera.screen_to_world_point(
@@ -86,22 +131,10 @@ impl<'s> System<'s> for TileSelectSystem {
                     screen_dimensions,
                     transform,
                 );
-                let hex: HexCoord = world_point.into();
-                if self.mouse_was_down && !mouse_is_down {
-                    for (entity, _selection) in (&*entities, &selections).join() {
-                        entities.delete(entity);
-                    }
-                    for (entity, selectable, hex_coord, transform) in
-                        (&*entities, &mut selectables, &hex_coords, &transforms).join()
-                    {
-                        selectable.selected = *hex_coord == hex;
-                        if selectable.selected {
-                            selection_transform = Some(transform.clone());
-                        }
-                    }
-                }
+                let mouse_hex: HexCoord = world_point.into();
             }
         }
+        */
 
         if let Some(transform) = selection_transform {
             let highlight_sprite = SpriteRender::new(sprite_sheet_handle.clone(), 2);
@@ -113,6 +146,7 @@ impl<'s> System<'s> for TileSelectSystem {
                 .build();
         }
 
-        self.mouse_was_down = mouse_is_down;
+        self.left_mouse_was_down = left_mouse_is_down;
+        self.right_mouse_was_down = right_mouse_is_down;
     }
 }

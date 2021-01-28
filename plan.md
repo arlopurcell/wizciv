@@ -1,6 +1,7 @@
 The Plan
 
-* make a thing where units can move around on a hex board
+* prevent unit collisions
+* implement turns
 * make the units fight
 * implement AI
 * limit sight range

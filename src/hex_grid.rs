@@ -3,7 +3,7 @@ use amethyst::core::math::{Matrix2, Point3, Vector2};
 
 pub const HEX_SIZE: f32 = 60.0;
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Copy, Clone)]
 pub struct HexCoord {
     pub q: i16,
     pub r: i16,
@@ -12,6 +12,28 @@ pub struct HexCoord {
 impl HexCoord {
     pub fn new(q: i16, r: i16) -> Self {
         HexCoord { q, r }
+    }
+
+    pub fn is_adjacent(&self, other: &Self) -> bool {
+        let q_diff = self.q - other.q;
+        let r_diff = self.r - other.r;
+
+        match (q_diff, r_diff) {
+            (1, 0)
+                | (-1, 0)
+                | (0, 1)
+                | (0, -1)
+                | (1, -1)
+                | (-1, 1) => true,
+            _ => false,
+        }
+    }
+
+    pub fn world_coords(&self) -> (f32, f32) {
+        let hex_vec = Vector2::new(self.q as f32, self.r as f32);
+        let matrix = Matrix2::new(3. / 2., 0., (3_f32).sqrt() / 2., (3_f32).sqrt());
+        let world_vec = HEX_SIZE * matrix * hex_vec;
+        (world_vec.x, world_vec.y)
     }
 }
 
