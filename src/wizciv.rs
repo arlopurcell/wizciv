@@ -1,6 +1,7 @@
 use amethyst::{
     assets::{AssetStorage, Loader, Handle},
     core::transform::Transform,
+    core::math::Vector2,
     ecs::{Component, DenseVecStorage, Read, System, SystemData, World},
     prelude::*,
     input::{InputHandler, ControllerButton, VirtualKeyCode, StringBindings},
@@ -8,6 +9,9 @@ use amethyst::{
     derive::SystemDesc,
     renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
 };
+
+use crate::hex_grid::HexCoord;
+use crate::systems::tile_select::Selectable;
 
 pub struct WizCiv;
 
@@ -26,8 +30,8 @@ impl SimpleState for WizCiv {
     }
 }
 
-pub const X_TILE_NUM: usize = 10;
-pub const Y_TILE_NUM: usize = 10;
+pub const X_TILE_NUM: i16 = 3;
+pub const Y_TILE_NUM: i16 = 3;
 
 pub const HEX_SIZE: f32 = 90.0;
 pub const HEX_HEIGHT: f32 = 103.923;
@@ -54,17 +58,15 @@ pub enum TileType {
 
 pub struct Tile {
     pub tile_type: TileType,
-    pub x: u16,
-    pub y: u16,
 }
 
 impl Tile {
-    fn grass(x: u16, y: u16) -> Self {
-        Self::new(TileType::Grass, x, y)
+    fn grass() -> Self {
+        Self::new(TileType::Grass)
     }
 
-    fn new(tile_type: TileType, x: u16, y: u16) -> Self {
-        Tile { tile_type, x, y }
+    fn new(tile_type: TileType) -> Self {
+        Tile { tile_type }
     }
 }
 
@@ -74,15 +76,19 @@ impl Component for Tile {
 
 fn initialise_tiles(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) {
     let tile_sprite = SpriteRender::new(sprite_sheet_handle, 1);
-    for i in 0..X_TILE_NUM {
-        for j in 0..Y_TILE_NUM {
-            let (i, j) = (i as u16, j as u16);
+    for i in -X_TILE_NUM..X_TILE_NUM {
+        for j in -Y_TILE_NUM..Y_TILE_NUM {
+            let hex = HexCoord::new(i, j);
             let mut transform = Transform::default();
-            let (x, y) = indexes_to_coordinates(i, j);
-            transform.set_translation_xyz(x, y, 0.0);
+            let pixel: Vector2<f32> = hex.into();
+            //let (i, j) = (i as i16, j as i16);
+            //let (x, y) = indexes_to_coordinates(i, j);
+            //transform.set_translation_xyz(x, y, 0.0);
+            transform.set_translation_x(pixel.x).set_translation_y(pixel.y);
             world
                 .create_entity()
-                .with(Tile::grass(i, j))
+                .with(Tile::grass())
+                .with(HexCoord::new(i, j))
                 .with(transform)
                 .with(tile_sprite.clone())
                 .build();
@@ -90,14 +96,11 @@ fn initialise_tiles(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>)
     }
 }
 
-pub struct Unit {
-    pub x: u16,
-    pub y: u16,
-}
+pub struct Unit {}
 
 impl Unit {
-    fn new(x: u16, y: u16) -> Self {
-        Unit { x, y }
+    fn new() -> Self {
+        Unit { }
     }
 }
 
@@ -108,36 +111,40 @@ impl Component for Unit {
 fn initialise_units(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) {
     let mage_sprite = SpriteRender::new(sprite_sheet_handle, 0);
 
-    let (i, j) = (5, 5);
-    let (x, y) = indexes_to_coordinates(i, j);
+    let hex = HexCoord::new(0, 0);
+    let pixel: Vector2<f32> = hex.into();
     let mut transform = Transform::default();
-    transform.set_translation_xyz(x, y, 5.0);
+    transform
+        .set_translation_x(pixel.x)
+        .set_translation_y(pixel.y)
+        .set_translation_z(5.0);
     world
         .create_entity()
-        .with(Unit::new(i, j))
+        .with(Unit::new())
+        .with(Selectable::default())
+        .with(HexCoord::new(0, 0))
         .with(transform)
         .with(mage_sprite.clone())
         .build();
 
-    let (i, j) = (7, 2);
-    let (x, y) = indexes_to_coordinates(i, j);
+    let hex = HexCoord::new(1, 2);
+    let pixel: Vector2<f32> = hex.into();
     let mut transform = Transform::default();
-    transform.set_translation_xyz(x, y, 5.0);
+    transform
+        .set_translation_x(pixel.x)
+        .set_translation_y(pixel.y)
+        .set_translation_z(5.0);
     world
         .create_entity()
-        .with(Unit::new(i, j))
+        .with(Unit::new())
+        .with(Selectable::default())
+        .with(HexCoord::new(1, 2))
         .with(transform)
         .with(mage_sprite)
         .build();
 }
 
-fn indexes_to_coordinates(i: u16, j: u16) -> (f32, f32) {
-    let x = i as f32 * HEX_SIZE;
-    let y = j as f32 * HEX_HEIGHT - ((i & 1) as f32 * (HEX_HEIGHT / 2.0));
-    (x, y)
-}
-
-fn load_sprite_sheet(world: &World) -> Handle<SpriteSheet> {
+fn load_sprite_sheet(world: &mut World) -> Handle<SpriteSheet> {
     let texture_handle = {
         let loader = world.read_resource::<Loader>();
         let texture_storage = world.read_resource::<AssetStorage<Texture>>();
@@ -149,13 +156,17 @@ fn load_sprite_sheet(world: &World) -> Handle<SpriteSheet> {
         )
     };
 
-    let loader = world.read_resource::<Loader>();
-    let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
-    loader.load(
-        "texture/spritesheet.ron",
-        SpriteSheetFormat(texture_handle),
-        (),
-        &sprite_sheet_store,
-    )
+    let sheet_handle = {
+        let loader = world.read_resource::<Loader>();
+        let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
+        loader.load(
+            "texture/spritesheet.ron",
+            SpriteSheetFormat(texture_handle),
+            (),
+            &sprite_sheet_store,
+        )
+    };
+    world.insert(sheet_handle.clone());
+    sheet_handle
 }
 
