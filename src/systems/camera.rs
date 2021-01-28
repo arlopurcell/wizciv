@@ -1,5 +1,5 @@
 use amethyst::{
-    core::{Transform, SystemDesc, math::Vector3},
+    core::{math::Vector3, SystemDesc, Transform},
     derive::SystemDesc,
     ecs::{Join, Read, ReadStorage, System, SystemData, World, WriteStorage},
     input::{InputHandler, StringBindings},
@@ -10,7 +10,6 @@ const MOVE_SPEED: f32 = 10.0;
 const ZOOM_SPEED: f32 = 0.2;
 const ZOOM_MIN: f32 = 0.1;
 const ZOOM_MAX: f32 = 3.0;
-
 
 #[derive(SystemDesc)]
 pub struct MoveCameraSystem;
@@ -49,4 +48,3 @@ impl<'s> System<'s> for MoveCameraSystem {
         }
     }
 }
-

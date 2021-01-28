@@ -1,10 +1,16 @@
 use amethyst::{
     assets::Handle,
-    core::{Transform, SystemDesc, math::{Vector3, Vector2, Point3}},
+    core::{
+        math::{Point3, Vector2, Vector3},
+        SystemDesc, Transform,
+    },
     derive::SystemDesc,
-    ecs::{Join, Read, ReadExpect, ReadStorage, System, SystemData, World, WriteStorage, Entity, Entities, Component, NullStorage, DenseVecStorage},
+    ecs::{
+        Component, DenseVecStorage, Entities, Entity, Join, NullStorage, Read, ReadExpect,
+        ReadStorage, System, SystemData, World, WriteStorage,
+    },
     input::{InputHandler, StringBindings},
-    renderer::{Camera, SpriteSheet, SpriteRender},
+    renderer::{Camera, SpriteRender, SpriteSheet},
     window::ScreenDimensions,
     winit::MouseButton,
 };
@@ -34,7 +40,9 @@ pub struct TileSelectSystem {
 
 impl TileSelectSystem {
     pub fn new() -> Self {
-        TileSelectSystem { mouse_was_down: false }
+        TileSelectSystem {
+            mouse_was_down: false,
+        }
     }
 }
 
@@ -52,33 +60,53 @@ impl<'s> System<'s> for TileSelectSystem {
         ReadExpect<'s, Handle<SpriteSheet>>,
     );
 
-    fn run(&mut self, (entities, mut selections, mut selectables, hex_coords, mut transforms, cameras, input, dimensions, mut sprite_renders, sprite_sheet_handle): Self::SystemData) {
+    fn run(
+        &mut self,
+        (
+            entities,
+            mut selections,
+            mut selectables,
+            hex_coords,
+            mut transforms,
+            cameras,
+            input,
+            dimensions,
+            mut sprite_renders,
+            sprite_sheet_handle,
+        ): Self::SystemData,
+    ) {
         let mouse_is_down = input.mouse_button_is_down(MouseButton::Left);
 
         let screen_dimensions = Vector2::new(dimensions.width(), dimensions.height());
         let mut selection_transform = None;
         for (camera, transform) in (&cameras, &transforms).join() {
             if let Some((screen_x, screen_y)) = input.mouse_position() {
-                let world_point = camera.screen_to_world_point(Point3::new(screen_x, screen_y, 0.0), screen_dimensions, transform);
+                let world_point = camera.screen_to_world_point(
+                    Point3::new(screen_x, screen_y, 0.0),
+                    screen_dimensions,
+                    transform,
+                );
                 let hex: HexCoord = world_point.into();
                 if self.mouse_was_down && !mouse_is_down {
                     for (entity, _selection) in (&*entities, &selections).join() {
                         entities.delete(entity);
                     }
-                    for (entity, selectable, hex_coord, transform) in (&*entities, &mut selectables, &hex_coords, &transforms).join() {
+                    for (entity, selectable, hex_coord, transform) in
+                        (&*entities, &mut selectables, &hex_coords, &transforms).join()
+                    {
                         selectable.selected = *hex_coord == hex;
                         if selectable.selected {
                             selection_transform = Some(transform.clone());
                         }
                     }
-
                 }
             }
         }
 
         if let Some(transform) = selection_transform {
             let highlight_sprite = SpriteRender::new(sprite_sheet_handle.clone(), 2);
-            entities.build_entity()
+            entities
+                .build_entity()
                 .with(transform, &mut transforms)
                 .with(Selection, &mut selections)
                 .with(highlight_sprite, &mut sprite_renders)
@@ -88,4 +116,3 @@ impl<'s> System<'s> for TileSelectSystem {
         self.mouse_was_down = mouse_is_down;
     }
 }
-

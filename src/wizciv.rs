@@ -1,12 +1,12 @@
 use amethyst::{
-    assets::{AssetStorage, Loader, Handle},
-    core::transform::Transform,
+    assets::{AssetStorage, Handle, Loader},
     core::math::Vector2,
-    ecs::{Component, DenseVecStorage, Read, System, SystemData, World},
-    prelude::*,
-    input::{InputHandler, ControllerButton, VirtualKeyCode, StringBindings},
+    core::transform::Transform,
     core::SystemDesc,
     derive::SystemDesc,
+    ecs::{Component, DenseVecStorage, Read, System, SystemData, World},
+    input::{ControllerButton, InputHandler, StringBindings, VirtualKeyCode},
+    prelude::*,
     renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
 };
 
@@ -84,7 +84,9 @@ fn initialise_tiles(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>)
             //let (i, j) = (i as i16, j as i16);
             //let (x, y) = indexes_to_coordinates(i, j);
             //transform.set_translation_xyz(x, y, 0.0);
-            transform.set_translation_x(pixel.x).set_translation_y(pixel.y);
+            transform
+                .set_translation_x(pixel.x)
+                .set_translation_y(pixel.y);
             world
                 .create_entity()
                 .with(Tile::grass())
@@ -100,7 +102,7 @@ pub struct Unit {}
 
 impl Unit {
     fn new() -> Self {
-        Unit { }
+        Unit {}
     }
 }
 
@@ -169,4 +171,3 @@ fn load_sprite_sheet(world: &mut World) -> Handle<SpriteSheet> {
     world.insert(sheet_handle.clone());
     sheet_handle
 }
-
