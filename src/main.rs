@@ -35,8 +35,7 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(TransformBundle::new())?
         .with_bundle(InputBundle::<StringBindings>::new().with_bindings_from_file(bindings_config_path)?)?
         .with(systems::MoveCameraSystem, "move_camera_system", &["input_system"])
-        .with(systems::TileSelectSystem::new(), "tile_select_system", &["input_system"])
-        .with(systems::UnitHighlightSystem, "unit_highlight_system", &["tile_select_system"]);
+        .with(systems::TileSelectSystem::new(), "tile_select_system", &["input_system"]);
 
     let assets_dir = app_root.join("assets");
     let mut game = Application::new(assets_dir, WizCiv, game_data)?;
