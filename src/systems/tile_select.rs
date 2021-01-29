@@ -1,18 +1,12 @@
 use amethyst::{
     assets::Handle,
-    core::{
-        math::{Point3, Vector2, Vector3},
-        SystemDesc, Transform,
-    },
+    core::Transform,
     derive::SystemDesc,
     ecs::{
-        Component, DenseVecStorage, Entities, Entity, Join, NullStorage, Read, ReadExpect,
-        ReadStorage, System, SystemData, World, WriteStorage,
+        Component, DenseVecStorage, Entities, Join, NullStorage, Read, ReadExpect,
+        System, SystemData, WriteStorage,
     },
-    input::{InputHandler, StringBindings},
-    renderer::{Camera, SpriteRender, SpriteSheet},
-    window::ScreenDimensions,
-    winit::MouseButton,
+    renderer::{SpriteRender, SpriteSheet},
 };
 
 use crate::hex_grid::HexCoord;
@@ -35,19 +29,7 @@ impl Component for Selectable {
 }
 
 #[derive(SystemDesc)]
-pub struct TileSelectSystem {
-    left_mouse_was_down: bool,
-    right_mouse_was_down: bool,
-}
-
-impl TileSelectSystem {
-    pub fn new() -> Self {
-        TileSelectSystem {
-            left_mouse_was_down: false,
-            right_mouse_was_down: false,
-        }
-    }
-}
+pub struct TileSelectSystem;
 
 impl<'s> System<'s> for TileSelectSystem {
     type SystemData = (
@@ -78,7 +60,7 @@ impl<'s> System<'s> for TileSelectSystem {
             for (entity, _selection) in (&*entities, &selections).join() {
                 entities.delete(entity);
             }
-            for (entity, selectable, transform) in
+            for (_entity, selectable, transform) in
                 (&*entities, &mut selectables, &transforms).join()
                 {
                     let hex_coord: HexCoord = (transform.translation().x, transform.translation().y).into();
@@ -92,7 +74,7 @@ impl<'s> System<'s> for TileSelectSystem {
         if mouse_state.right_state.is_clicked() {
             let mut moved = false;
             let (mouse_x, mouse_y) = mouse_state.hex.world_coords();
-            for (entity, selectable, mut transform) in
+            for (_entity, selectable, transform) in
                 (&*entities, &mut selectables, &mut transforms).join()
                 {
                     let hex_coord: HexCoord = (transform.translation().x, transform.translation().y).into();

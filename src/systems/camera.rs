@@ -1,7 +1,7 @@
 use amethyst::{
-    core::{math::Vector3, SystemDesc, Transform},
+    core::{math::Vector3, Transform},
     derive::SystemDesc,
-    ecs::{Join, Read, ReadStorage, System, SystemData, World, WriteStorage},
+    ecs::{Join, Read, ReadStorage, System, SystemData, WriteStorage},
     input::{InputHandler, StringBindings},
     renderer::Camera,
 };

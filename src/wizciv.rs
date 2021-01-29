@@ -2,10 +2,7 @@ use amethyst::{
     assets::{AssetStorage, Handle, Loader},
     core::math::Vector2,
     core::transform::Transform,
-    core::SystemDesc,
-    derive::SystemDesc,
-    ecs::{Component, DenseVecStorage, Read, System, SystemData, World},
-    input::{ControllerButton, InputHandler, StringBindings, VirtualKeyCode},
+    ecs::{Component, DenseVecStorage, World},
     prelude::*,
     renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
 };
@@ -54,7 +51,6 @@ pub const X_TILE_NUM: i16 = 3;
 pub const Y_TILE_NUM: i16 = 3;
 
 pub const HEX_SIZE: f32 = 90.0;
-pub const HEX_HEIGHT: f32 = 103.923;
 
 pub const WORLD_WIDTH: f32 = X_TILE_NUM as f32 * HEX_SIZE;
 pub const WORLD_HEIGHT: f32 = Y_TILE_NUM as f32 * HEX_SIZE;

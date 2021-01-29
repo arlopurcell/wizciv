@@ -1,16 +1,15 @@
 use amethyst::{
-    assets::Handle,
     core::{
-        math::{Point3, Vector2, Vector3},
-        SystemDesc, Transform,
+        math::{Point3, Vector2},
+        Transform,
     },
     derive::SystemDesc,
     ecs::{
-        Component, DenseVecStorage, Entities, Entity, Join, NullStorage, Read, ReadExpect,
-        ReadStorage, System, SystemData, World, WriteStorage, Write,
+        Join, Read, ReadExpect,
+        ReadStorage, System, SystemData, Write,
     },
     input::{InputHandler, StringBindings},
-    renderer::{Camera, SpriteRender, SpriteSheet},
+    renderer::Camera,
     window::ScreenDimensions,
     winit::MouseButton,
 };

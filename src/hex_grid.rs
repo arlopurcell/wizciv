@@ -1,4 +1,4 @@
-use amethyst::core::ecs::{Component, DenseVecStorage};
+
 use amethyst::core::math::{Matrix2, Point3, Vector2};
 
 pub const HEX_SIZE: f32 = 60.0;

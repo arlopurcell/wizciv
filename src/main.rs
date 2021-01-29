@@ -47,7 +47,7 @@ fn main() -> amethyst::Result<()> {
             &["input_system"],
         )
         .with(
-            systems::TileSelectSystem::new(),
+            systems::TileSelectSystem,
             "tile_select_system",
             &["mouse_hex_system"],
         );
