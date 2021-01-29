@@ -4,10 +4,7 @@ use amethyst::{
         Transform,
     },
     derive::SystemDesc,
-    ecs::{
-        Join, Read, ReadExpect,
-        ReadStorage, System, SystemData, Write,
-    },
+    ecs::{Join, Read, ReadExpect, ReadStorage, System, SystemData, Write},
     input::{InputHandler, StringBindings},
     renderer::Camera,
     window::ScreenDimensions,
@@ -29,19 +26,22 @@ impl<'s> System<'s> for MouseHexSystem {
         ReadExpect<'s, ScreenDimensions>,
     );
 
-    fn run(
-        &mut self,
-        (
-            mut mouse_state,
-            transforms,
-            cameras,
-            input,
-            dimensions,
-        ): Self::SystemData,
-    ) {
+    fn run(&mut self, (mut mouse_state, transforms, cameras, input, dimensions): Self::SystemData) {
         let screen_dimensions = Vector2::new(dimensions.width(), dimensions.height());
 
-        let mouse_hex: Option<HexCoord> = (&cameras, &transforms).join().next().and_then(|(c, t)| input.mouse_position().map(|mp| (c, t, mp))).map(|(camera, transform, (screen_x, screen_y))| camera.screen_to_world_point(Point3::new(screen_x, screen_y, 0.0), screen_dimensions, transform).into());
+        let mouse_hex: Option<HexCoord> = (&cameras, &transforms)
+            .join()
+            .next()
+            .and_then(|(c, t)| input.mouse_position().map(|mp| (c, t, mp)))
+            .map(|(camera, transform, (screen_x, screen_y))| {
+                camera
+                    .screen_to_world_point(
+                        Point3::new(screen_x, screen_y, 0.0),
+                        screen_dimensions,
+                        transform,
+                    )
+                    .into()
+            });
 
         if let Some(mouse_hex) = mouse_hex {
             mouse_state.hex = mouse_hex;

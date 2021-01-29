@@ -1,4 +1,3 @@
-
 use amethyst::core::math::{Matrix2, Point3, Vector2};
 
 pub const HEX_SIZE: f32 = 60.0;
@@ -19,12 +18,7 @@ impl HexCoord {
         let r_diff = self.r - other.r;
 
         match (q_diff, r_diff) {
-            (1, 0)
-                | (-1, 0)
-                | (0, 1)
-                | (0, -1)
-                | (1, -1)
-                | (-1, 1) => true,
+            (1, 0) | (-1, 0) | (0, 1) | (0, -1) | (1, -1) | (-1, 1) => true,
             _ => false,
         }
     }
@@ -66,4 +60,3 @@ impl From<Point3<f32>> for HexCoord {
         v.into()
     }
 }
-

@@ -1,14 +1,13 @@
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
     core::math::Vector2,
-    core::transform::Transform,
-    ecs::{Component, DenseVecStorage, World},
+    core::{Hidden, Transform},
+    ecs::{Component, DenseVecStorage, NullStorage, World},
     prelude::*,
     renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
 };
 
 use crate::hex_grid::HexCoord;
-use crate::systems::tile_select::Selectable;
 
 pub struct WizCiv;
 
@@ -22,6 +21,7 @@ impl SimpleState for WizCiv {
         world.register::<Unit>();
         world.insert(MouseState::default());
 
+        initialise_selection(world, sprite_sheet_handle.clone());
         initialise_tiles(world, sprite_sheet_handle.clone());
         initialise_units(world, sprite_sheet_handle);
         initialise_camera(world);
@@ -45,6 +45,22 @@ impl ButtonState {
     pub fn is_clicked(&self) -> bool {
         !self.is_down && self.was_down
     }
+}
+
+#[derive(Default)]
+pub struct Selection;
+
+impl Component for Selection {
+    type Storage = NullStorage<Self>;
+}
+
+#[derive(Default)]
+pub struct Selectable {
+    pub selected: bool,
+}
+
+impl Component for Selectable {
+    type Storage = DenseVecStorage<Self>;
 }
 
 pub const X_TILE_NUM: i16 = 3;
@@ -123,6 +139,17 @@ impl Unit {
 
 impl Component for Unit {
     type Storage = DenseVecStorage<Self>;
+}
+
+fn initialise_selection(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) {
+    let highlight_sprite = SpriteRender::new(sprite_sheet_handle, 2);
+    world
+        .create_entity()
+        .with(Transform::default())
+        .with(Selection)
+        .with(Hidden)
+        .with(highlight_sprite)
+        .build();
 }
 
 fn initialise_units(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) {

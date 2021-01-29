@@ -1,32 +1,11 @@
 use amethyst::{
-    assets::Handle,
-    core::Transform,
+    core::{Hidden, Transform},
     derive::SystemDesc,
-    ecs::{
-        Component, DenseVecStorage, Entities, Join, NullStorage, Read, ReadExpect,
-        System, SystemData, WriteStorage,
-    },
-    renderer::{SpriteRender, SpriteSheet},
+    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, WriteStorage},
 };
 
 use crate::hex_grid::HexCoord;
-use crate::wizciv::MouseState;
-
-#[derive(Default)]
-pub struct Selection;
-
-impl Component for Selection {
-    type Storage = NullStorage<Self>;
-}
-
-#[derive(Default)]
-pub struct Selectable {
-    selected: bool,
-}
-
-impl Component for Selectable {
-    type Storage = DenseVecStorage<Self>;
-}
+use crate::wizciv::{MouseState, Selectable, Selection};
 
 #[derive(SystemDesc)]
 pub struct TileSelectSystem;
@@ -35,11 +14,10 @@ impl<'s> System<'s> for TileSelectSystem {
     type SystemData = (
         Entities<'s>,
         Read<'s, MouseState>,
-        WriteStorage<'s, Selection>,
+        ReadStorage<'s, Selection>,
         WriteStorage<'s, Selectable>,
         WriteStorage<'s, Transform>,
-        WriteStorage<'s, SpriteRender>,
-        ReadExpect<'s, Handle<SpriteSheet>>,
+        WriteStorage<'s, Hidden>,
     );
 
     fn run(
@@ -47,59 +25,71 @@ impl<'s> System<'s> for TileSelectSystem {
         (
             entities,
             mouse_state,
-            mut selections,
+            selections,
             mut selectables,
             mut transforms,
-            mut sprite_renders,
-            sprite_sheet_handle,
+            mut hiddens,
         ): Self::SystemData,
     ) {
-        let mut selection_transform = None;
+        let mut new_selection_transform = None;
+        let mut hide_selection = None;
         if mouse_state.left_state.is_clicked() {
-            // TODO hide and show selection with z position
-            for (entity, _selection) in (&*entities, &selections).join() {
-                entities.delete(entity);
-            }
+            hide_selection = Some(true);
             for (_entity, selectable, transform) in
                 (&*entities, &mut selectables, &transforms).join()
-                {
-                    let hex_coord: HexCoord = (transform.translation().x, transform.translation().y).into();
-                    selectable.selected = hex_coord == mouse_state.hex;
-                    if selectable.selected {
-                        selection_transform = Some(transform.clone());
-                    }
+            {
+                let hex_coord: HexCoord =
+                    (transform.translation().x, transform.translation().y).into();
+                selectable.selected = hex_coord == mouse_state.hex;
+                if selectable.selected {
+                    new_selection_transform = Some(transform.clone());
+                    hide_selection = Some(false);
                 }
+            }
+        }
+        if let Some(transform) = new_selection_transform {
+            let selection_transform = (&selections, &mut transforms)
+                .join()
+                .next()
+                .expect("There should be a selection component with a transform")
+                .1;
+            *selection_transform = transform;
         }
 
         if mouse_state.right_state.is_clicked() {
-            let mut moved = false;
+            //let mut moved = false;
             let (mouse_x, mouse_y) = mouse_state.hex.world_coords();
             for (_entity, selectable, transform) in
                 (&*entities, &mut selectables, &mut transforms).join()
-                {
-                    let hex_coord: HexCoord = (transform.translation().x, transform.translation().y).into();
-                    if selectable.selected {
-                        if mouse_state.hex.is_adjacent(&hex_coord) {
-                            transform.set_translation_x(mouse_x).set_translation_y(mouse_y);
-                            moved = true;
-                        }
+            {
+                let hex_coord: HexCoord =
+                    (transform.translation().x, transform.translation().y).into();
+                if selectable.selected {
+                    if mouse_state.hex.is_adjacent(&hex_coord) {
+                        transform
+                            .set_translation_x(mouse_x)
+                            .set_translation_y(mouse_y);
+                        selectable.selected = false;
+                        //moved = true;
+                        hide_selection = Some(true);
                     }
-                }
-            if moved {
-                for (entity, _selection) in (&*entities, &selections).join() {
-                    entities.delete(entity);
                 }
             }
         }
 
-        if let Some(transform) = selection_transform {
-            let highlight_sprite = SpriteRender::new(sprite_sheet_handle.clone(), 2);
-            entities
-                .build_entity()
-                .with(transform, &mut transforms)
-                .with(Selection, &mut selections)
-                .with(highlight_sprite, &mut sprite_renders)
-                .build();
+        if let Some(hide_selection) = hide_selection {
+            let selection_entity = (&*entities, &selections)
+                .join()
+                .next()
+                .expect("There should be a selection entity")
+                .0;
+            if hide_selection {
+                hiddens
+                    .insert(selection_entity, Hidden)
+                    .expect("Hiding stuff shouldn't fail");
+            } else {
+                hiddens.remove(selection_entity);
+            }
         }
     }
 }
