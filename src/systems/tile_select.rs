@@ -55,7 +55,6 @@ impl<'s> System<'s> for TileSelectSystem {
         Read<'s, MouseState>,
         WriteStorage<'s, Selection>,
         WriteStorage<'s, Selectable>,
-        WriteStorage<'s, HexCoord>,
         WriteStorage<'s, Transform>,
         WriteStorage<'s, SpriteRender>,
         ReadExpect<'s, Handle<SpriteSheet>>,
@@ -68,7 +67,6 @@ impl<'s> System<'s> for TileSelectSystem {
             mouse_state,
             mut selections,
             mut selectables,
-            mut hex_coords,
             mut transforms,
             mut sprite_renders,
             sprite_sheet_handle,
@@ -80,11 +78,11 @@ impl<'s> System<'s> for TileSelectSystem {
             for (entity, _selection) in (&*entities, &selections).join() {
                 entities.delete(entity);
             }
-            // TODO remove hex_coords component and just calculate from transform
-            for (entity, selectable, hex_coord, transform) in
-                (&*entities, &mut selectables, &hex_coords, &transforms).join()
+            for (entity, selectable, transform) in
+                (&*entities, &mut selectables, &transforms).join()
                 {
-                    selectable.selected = *hex_coord == mouse_state.hex;
+                    let hex_coord = HexCoord::new(transform.translation().x, transform.translation().y);
+                    selectable.selected = hex_coord == mouse_state.hex;
                     if selectable.selected {
                         selection_transform = Some(transform.clone());
                     }
@@ -94,14 +92,13 @@ impl<'s> System<'s> for TileSelectSystem {
         if mouse_state.right_state.is_clicked() {
             let mut moved = false;
             let (mouse_x, mouse_y) = mouse_state.hex.world_coords();
-            // TODO remove hex_coords component and just calculate from transform
-            for (entity, selectable, mut hex_coord, mut transform) in
-                (&*entities, &mut selectables, &mut hex_coords, &mut transforms).join()
+            for (entity, selectable, mut transform) in
+                (&*entities, &mut selectables, &mut transforms).join()
                 {
+                    let hex_coord = HexCoord::new(transform.translation().x, transform.translation().y);
                     if selectable.selected {
                         if mouse_state.hex.is_adjacent(hex_coord) {
                             transform.set_translation_x(mouse_x).set_translation_y(mouse_y);
-                            *hex_coord = mouse_state.hex;
                             moved = true;
                         }
                     }
