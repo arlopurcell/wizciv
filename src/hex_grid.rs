@@ -3,7 +3,7 @@ use amethyst::core::math::{Matrix2, Point3, Vector2};
 
 pub const HEX_SIZE: f32 = 60.0;
 
-#[derive(PartialEq, Eq, Copy, Clone)]
+#[derive(PartialEq, Eq, Copy, Clone, Default)]
 pub struct HexCoord {
     pub q: i16,
     pub r: i16,

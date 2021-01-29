@@ -16,6 +16,7 @@ use amethyst::{
 };
 
 use crate::hex_grid::HexCoord;
+use crate::wizciv::MouseState;
 
 #[derive(Default)]
 pub struct Selection;
@@ -51,13 +52,11 @@ impl TileSelectSystem {
 impl<'s> System<'s> for TileSelectSystem {
     type SystemData = (
         Entities<'s>,
+        Read<'s, MouseState>,
         WriteStorage<'s, Selection>,
         WriteStorage<'s, Selectable>,
         WriteStorage<'s, HexCoord>,
         WriteStorage<'s, Transform>,
-        ReadStorage<'s, Camera>,
-        Read<'s, InputHandler<StringBindings>>,
-        ReadExpect<'s, ScreenDimensions>,
         WriteStorage<'s, SpriteRender>,
         ReadExpect<'s, Handle<SpriteSheet>>,
     );
@@ -66,75 +65,53 @@ impl<'s> System<'s> for TileSelectSystem {
         &mut self,
         (
             entities,
+            mouse_state,
             mut selections,
             mut selectables,
             mut hex_coords,
             mut transforms,
-            cameras,
-            input,
-            dimensions,
             mut sprite_renders,
             sprite_sheet_handle,
         ): Self::SystemData,
     ) {
-        let left_mouse_is_down = input.mouse_button_is_down(MouseButton::Left);
-        let right_mouse_is_down = input.mouse_button_is_down(MouseButton::Right);
-
-        let screen_dimensions = Vector2::new(dimensions.width(), dimensions.height());
         let mut selection_transform = None;
+        if mouse_state.left_state.is_clicked() {
+            // TODO hide and show selection with z position
+            for (entity, _selection) in (&*entities, &selections).join() {
+                entities.delete(entity);
+            }
+            // TODO remove hex_coords component and just calculate from transform
+            for (entity, selectable, hex_coord, transform) in
+                (&*entities, &mut selectables, &hex_coords, &transforms).join()
+                {
+                    selectable.selected = *hex_coord == mouse_state.hex;
+                    if selectable.selected {
+                        selection_transform = Some(transform.clone());
+                    }
+                }
+        }
 
-        let mouse_hex: Option<HexCoord> = (&cameras, &transforms).join().next().and_then(|(c, t)| input.mouse_position().map(|mp| (c, t, mp))).map(|(camera, transform, (screen_x, screen_y))| camera.screen_to_world_point(Point3::new(screen_x, screen_y, 0.0), screen_dimensions, transform).into());
-
-        if let Some(mouse_hex) = mouse_hex {
-            if self.left_mouse_was_down && !left_mouse_is_down {
+        if mouse_state.right_state.is_clicked() {
+            let mut moved = false;
+            let (mouse_x, mouse_y) = mouse_state.hex.world_coords();
+            // TODO remove hex_coords component and just calculate from transform
+            for (entity, selectable, mut hex_coord, mut transform) in
+                (&*entities, &mut selectables, &mut hex_coords, &mut transforms).join()
+                {
+                    if selectable.selected {
+                        if mouse_state.hex.is_adjacent(hex_coord) {
+                            transform.set_translation_x(mouse_x).set_translation_y(mouse_y);
+                            *hex_coord = mouse_state.hex;
+                            moved = true;
+                        }
+                    }
+                }
+            if moved {
                 for (entity, _selection) in (&*entities, &selections).join() {
                     entities.delete(entity);
                 }
-                for (entity, selectable, hex_coord, transform) in
-                    (&*entities, &mut selectables, &hex_coords, &transforms).join()
-                    {
-                        selectable.selected = *hex_coord == mouse_hex;
-                        if selectable.selected {
-                            selection_transform = Some(transform.clone());
-                        }
-                    }
-            }
-
-            if self.right_mouse_was_down && !right_mouse_is_down {
-                let mut moved = false;
-                let (mouse_x, mouse_y) = mouse_hex.world_coords();
-                //let mouse_vector: Vector2<f32> = mouse_hex.into();
-                for (entity, selectable, mut hex_coord, mut transform) in
-                    (&*entities, &mut selectables, &mut hex_coords, &mut transforms).join()
-                    {
-                        if selectable.selected {
-                            if mouse_hex.is_adjacent(hex_coord) {
-                                transform.set_translation_x(mouse_x).set_translation_y(mouse_y);
-                                *hex_coord = mouse_hex;
-                                moved = true;
-                            }
-                        }
-                    }
-                if moved {
-                    for (entity, _selection) in (&*entities, &selections).join() {
-                        entities.delete(entity);
-                    }
-                }
             }
         }
-
-        /*
-        for (camera, transform) in (&cameras, &transforms).join() {
-            if let Some((screen_x, screen_y)) = input.mouse_position() {
-                let world_point = camera.screen_to_world_point(
-                    Point3::new(screen_x, screen_y, 0.0),
-                    screen_dimensions,
-                    transform,
-                );
-                let mouse_hex: HexCoord = world_point.into();
-            }
-        }
-        */
 
         if let Some(transform) = selection_transform {
             let highlight_sprite = SpriteRender::new(sprite_sheet_handle.clone(), 2);
@@ -145,8 +122,5 @@ impl<'s> System<'s> for TileSelectSystem {
                 .with(highlight_sprite, &mut sprite_renders)
                 .build();
         }
-
-        self.left_mouse_was_down = left_mouse_is_down;
-        self.right_mouse_was_down = right_mouse_is_down;
     }
 }

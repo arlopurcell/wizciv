@@ -37,6 +37,11 @@ fn main() -> amethyst::Result<()> {
             InputBundle::<StringBindings>::new().with_bindings_from_file(bindings_config_path)?,
         )?
         .with(
+            systems::MouseHexSystem,
+            "mouse_hex_system",
+            &["input_system"],
+        )
+        .with(
             systems::MoveCameraSystem,
             "move_camera_system",
             &["input_system"],
@@ -44,7 +49,7 @@ fn main() -> amethyst::Result<()> {
         .with(
             systems::TileSelectSystem::new(),
             "tile_select_system",
-            &["input_system"],
+            &["mouse_hex_system"],
         );
 
     let assets_dir = app_root.join("assets");

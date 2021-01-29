@@ -23,10 +23,30 @@ impl SimpleState for WizCiv {
 
         world.register::<Tile>();
         world.register::<Unit>();
+        world.insert(MouseState::default());
 
         initialise_tiles(world, sprite_sheet_handle.clone());
         initialise_units(world, sprite_sheet_handle);
         initialise_camera(world);
+    }
+}
+
+#[derive(Default)]
+pub struct MouseState {
+    pub hex: HexCoord,
+    pub left_state: ButtonState,
+    pub right_state: ButtonState,
+}
+
+#[derive(Default)]
+pub struct ButtonState {
+    pub is_down: bool,
+    pub was_down: bool,
+}
+
+impl ButtonState {
+    pub fn is_clicked(&self) -> bool {
+        !self.is_down && self.was_down
     }
 }
 
