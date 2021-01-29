@@ -110,7 +110,6 @@ fn initialise_tiles(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>)
             world
                 .create_entity()
                 .with(Tile::grass())
-                .with(HexCoord::new(i, j))
                 .with(transform)
                 .with(tile_sprite.clone())
                 .build();
@@ -144,7 +143,6 @@ fn initialise_units(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>)
         .create_entity()
         .with(Unit::new())
         .with(Selectable::default())
-        .with(HexCoord::new(0, 0))
         .with(transform)
         .with(mage_sprite.clone())
         .build();
@@ -160,7 +158,6 @@ fn initialise_units(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>)
         .create_entity()
         .with(Unit::new())
         .with(Selectable::default())
-        .with(HexCoord::new(1, 2))
         .with(transform)
         .with(mage_sprite)
         .build();

@@ -45,6 +45,13 @@ impl From<HexCoord> for Vector2<f32> {
     }
 }
 
+impl From<(f32, f32)> for HexCoord {
+    fn from((x, y): (f32, f32)) -> HexCoord {
+        let v = Vector2::new(x, y);
+        v.into()
+    }
+}
+
 impl From<Vector2<f32>> for HexCoord {
     fn from(v: Vector2<f32>) -> HexCoord {
         let matrix = Matrix2::new(2. / 3., 0., -1. / 3., (3_f32).sqrt() / 3.);
@@ -60,6 +67,3 @@ impl From<Point3<f32>> for HexCoord {
     }
 }
 
-impl Component for HexCoord {
-    type Storage = DenseVecStorage<Self>;
-}

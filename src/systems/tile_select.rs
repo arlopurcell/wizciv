@@ -81,7 +81,7 @@ impl<'s> System<'s> for TileSelectSystem {
             for (entity, selectable, transform) in
                 (&*entities, &mut selectables, &transforms).join()
                 {
-                    let hex_coord = HexCoord::new(transform.translation().x, transform.translation().y);
+                    let hex_coord: HexCoord = (transform.translation().x, transform.translation().y).into();
                     selectable.selected = hex_coord == mouse_state.hex;
                     if selectable.selected {
                         selection_transform = Some(transform.clone());
@@ -95,9 +95,9 @@ impl<'s> System<'s> for TileSelectSystem {
             for (entity, selectable, mut transform) in
                 (&*entities, &mut selectables, &mut transforms).join()
                 {
-                    let hex_coord = HexCoord::new(transform.translation().x, transform.translation().y);
+                    let hex_coord: HexCoord = (transform.translation().x, transform.translation().y).into();
                     if selectable.selected {
-                        if mouse_state.hex.is_adjacent(hex_coord) {
+                        if mouse_state.hex.is_adjacent(&hex_coord) {
                             transform.set_translation_x(mouse_x).set_translation_y(mouse_y);
                             moved = true;
                         }
