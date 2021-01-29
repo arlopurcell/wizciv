@@ -1,6 +1,8 @@
 The Plan
 
 * prevent unit collisions
+* limit movement to board size
+* limit camera movement to board size
 * implement turns
 * make the units fight
 * implement AI

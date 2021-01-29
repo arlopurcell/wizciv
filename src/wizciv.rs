@@ -1,13 +1,13 @@
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
-    core::math::Vector2,
+    core::math::{Vector2, Vector3},
     core::{Hidden, Transform},
     ecs::{Component, DenseVecStorage, NullStorage, World},
     prelude::*,
     renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
 };
 
-use crate::hex_grid::HexCoord;
+use crate::hex_grid::{HexCoord, HEX_SIZE};
 
 pub struct WizCiv;
 
@@ -63,22 +63,19 @@ impl Component for Selectable {
     type Storage = DenseVecStorage<Self>;
 }
 
-pub const X_TILE_NUM: i16 = 3;
-pub const Y_TILE_NUM: i16 = 3;
+pub const WORLD_HEX_RADIUS: i16 = 3;
 
-pub const HEX_SIZE: f32 = 90.0;
-
-pub const WORLD_WIDTH: f32 = X_TILE_NUM as f32 * HEX_SIZE;
-pub const WORLD_HEIGHT: f32 = Y_TILE_NUM as f32 * HEX_SIZE;
+pub const WORLD_PIXEL_SIZE: f32 = (WORLD_HEX_RADIUS * 3 + 1) as f32 * HEX_SIZE;
 
 fn initialise_camera(world: &mut World) {
     // Setup camera in a way that our screen covers whole arena and (0, 0) is in the bottom left.
     let mut transform = Transform::default();
-    transform.set_translation_xyz(WORLD_WIDTH * 0.5, WORLD_HEIGHT * 0.5, 100.0);
+    transform.set_translation_z(100.);
+    transform.set_scale(Vector3::new(2., 2., 2.));
 
     world
         .create_entity()
-        .with(Camera::standard_2d(WORLD_WIDTH, WORLD_HEIGHT))
+        .with(Camera::standard_2d(WORLD_PIXEL_SIZE, WORLD_PIXEL_SIZE))
         .with(transform)
         .build();
 }
@@ -108,14 +105,12 @@ impl Component for Tile {
 
 fn initialise_tiles(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) {
     let tile_sprite = SpriteRender::new(sprite_sheet_handle, 1);
-    for i in -X_TILE_NUM..X_TILE_NUM {
-        for j in -Y_TILE_NUM..Y_TILE_NUM {
+    for i in -WORLD_HEX_RADIUS..(WORLD_HEX_RADIUS + 1) {
+        let (j_min, j_max) = (-WORLD_HEX_RADIUS - i.min(0) , WORLD_HEX_RADIUS - i.max(0) + 1);
+        for j in j_min..j_max {
             let hex = HexCoord::new(i, j);
             let mut transform = Transform::default();
             let pixel: Vector2<f32> = hex.into();
-            //let (i, j) = (i as i16, j as i16);
-            //let (x, y) = indexes_to_coordinates(i, j);
-            //transform.set_translation_xyz(x, y, 0.0);
             transform
                 .set_translation_x(pixel.x)
                 .set_translation_y(pixel.y);
